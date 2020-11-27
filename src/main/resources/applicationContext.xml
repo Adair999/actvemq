@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--suppress ALL -->
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/context https://www.springframework.org/schema/context/spring-context.xsd">
+    <!--  开启包的自动扫描  -->
+    <context:component-scan base-package="com.txw.spring" />
+    <!--  配置生产者  -->
+    <bean id="jmsFactory" class="org.apache.activemq.pool.PooledConnectionFactory" destroy-method="stop">
+        <!-- 真正可以产生 Connection 的 ConnectionFactory，由对应的服务厂商提供 -->
+        <property name="connectionFactory">
+            <bean class="org.apache.activemq.ActiveMQConnectionFactory">
+                <property name="brokerURL" value="tcp://192.168.3.16:61616" />
+                <!-- 还可以配置 用户名、密码、信任包 -->
+            </bean>
+        </property>
+        <property name="maxConnections" value="100" />
+    </bean>
+    <!-- 队列目的地，点对点 -->
+    <bean id="destinationQueue" class="org.apache.activemq.command.ActiveMQQueue">
+        <constructor-arg index="0" value="spring-active-queue" />
+    </bean>
+    <!-- 主题目的地 -->
+    <bean id="destinationTopic" class="org.apache.activemq.command.ActiveMQTopic">
+        <constructor-arg index="0" value="spring-active-topic" />
+    </bean>
+    <!-- Spring提供的JMS工具类，它可以提供消息发送、接收等 -->
+    <bean id="jmsTemplate" class="org.springframework.jms.core.JmsTemplate">
+        <property name="connectionFactory" ref="jmsFactory" />
+        <property name="defaultDestination" ref="destinationQueue" />
+        <property name="messageConverter">
+            <bean class="org.springframework.jms.support.converter.SimpleMessageConverter" />
+        </property>
+    </bean>
+    <!-- 配置监听器，只需要启动生产者，不需要启动消费者，消费者可以自动接收消息 -->
+    <bean id="" class="org.springframework.jms.listener.DefaultMessageListenerContainer">
+        <property name="connectionFactory" ref="jmsFactory" />
+        <property name="destination" ref="destinationQueue" />
+        <!-- 消息监听器实现类 -->
+        <property name="messageListener" ref="myMessageListener" />
+    </bean>
+</beans>
